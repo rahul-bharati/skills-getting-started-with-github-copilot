@@ -1,6 +1,7 @@
 """
 Test configuration and fixtures for FastAPI tests
 """
+import copy
 import pytest
 from fastapi.testclient import TestClient
 from src.app import app
@@ -35,7 +36,7 @@ def sample_activities():
 def reset_activities():
     """Reset activities data before each test"""
     from src.app import activities
-    original_activities = activities.copy()
+    original_activities = copy.deepcopy(activities)
     yield
     # Restore original activities after test
     activities.clear()

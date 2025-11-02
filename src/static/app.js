@@ -69,26 +69,56 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
         
-        // Create participants list
-        const participantsList = details.participants.length > 0 
-          ? `<ul class="participants-list">${details.participants.map(participant => 
-              `<li class="participant-item">
-                <span class="participant-email">${participant}</span>
-                <button class="delete-participant" onclick="removeParticipant('${name}', '${participant}')" title="Remove participant">×</button>
-              </li>`
-            ).join('')}</ul>`
-          : '<p class="no-participants">No participants yet</p>';
+        // Create participants section
+        let participantsSection;
+        if (details.participants.length > 0) {
+          const ul = document.createElement("ul");
+          ul.className = "participants-list";
+          details.participants.forEach(participant => {
+            const li = document.createElement("li");
+            li.className = "participant-item";
+
+            const emailSpan = document.createElement("span");
+            emailSpan.className = "participant-email";
+            emailSpan.textContent = participant;
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.className = "delete-participant";
+            deleteBtn.title = "Remove participant";
+            deleteBtn.textContent = "×";
+            deleteBtn.addEventListener("click", () => {
+              removeParticipant(name, participant);
+            });
+
+            li.appendChild(emailSpan);
+            li.appendChild(deleteBtn);
+            ul.appendChild(li);
+          });
+          participantsSection = document.createElement("div");
+          participantsSection.className = "participants-section";
+          const label = document.createElement("p");
+          label.innerHTML = "<strong>Current Participants:</strong>";
+          participantsSection.appendChild(label);
+          participantsSection.appendChild(ul);
+        } else {
+          participantsSection = document.createElement("div");
+          participantsSection.className = "participants-section";
+          const label = document.createElement("p");
+          label.innerHTML = "<strong>Current Participants:</strong>";
+          participantsSection.appendChild(label);
+          const noP = document.createElement("p");
+          noP.className = "no-participants";
+          noP.textContent = "No participants yet";
+          participantsSection.appendChild(noP);
+        }
 
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
-          <div class="participants-section">
-            <p><strong>Current Participants:</strong></p>
-            ${participantsList}
-          </div>
         `;
+        activityCard.appendChild(participantsSection);
 
         activitiesList.appendChild(activityCard);
 

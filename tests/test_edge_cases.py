@@ -1,9 +1,6 @@
 """
 Tests for data validation and edge cases
 """
-import pytest
-from fastapi.testclient import TestClient
-from src.app import app, activities
 
 
 class TestValidationAndEdgeCases:
@@ -95,7 +92,12 @@ class TestValidationAndEdgeCases:
         for activity_name in activities_to_join:
             response = client.post(f"/activities/{activity_name}/signup?email={email}")
             assert response.status_code == 200
-            assert email in activities[activity_name]["participants"]
+            
+            # Use the API to verify the participant was added
+            activities_response = client.get("/activities")
+            assert activities_response.status_code == 200
+            activities_data = activities_response.json()
+            assert email in activities_data[activity_name]["participants"]
 
     def test_remove_participant_multiple_times(self, client):
         """Test removing the same participant multiple times"""
@@ -119,16 +121,23 @@ class TestValidationAndEdgeCases:
         activity_name = "Programming Class"
         emails = [f"concurrent{i}@mergington.edu" for i in range(5)]
         
-        initial_count = len(activities[activity_name]["participants"])
+        # Get initial participant count via API
+        response = client.get("/activities")
+        assert response.status_code == 200
+        activities_data = response.json()
+        initial_count = len(activities_data[activity_name]["participants"])
         
         # Simulate concurrent signups
         for email in emails:
             response = client.post(f"/activities/{activity_name}/signup?email={email}")
             assert response.status_code == 200
         
-        # Verify all were added
-        final_count = len(activities[activity_name]["participants"])
+        # Verify all were added via API
+        response = client.get("/activities")
+        assert response.status_code == 200
+        activities_data = response.json()
+        final_count = len(activities_data[activity_name]["participants"])
         assert final_count == initial_count + len(emails)
         
         for email in emails:
-            assert email in activities[activity_name]["participants"]
+            assert email in activities_data[activity_name]["participants"]
