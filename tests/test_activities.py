@@ -1,9 +1,6 @@
 """
 Tests for the activities API endpoints
 """
-import pytest
-from fastapi.testclient import TestClient
-from src.app import app, activities
 
 
 class TestActivitiesAPI:
@@ -45,8 +42,11 @@ class TestActivitiesAPI:
         email = "newstudent@mergington.edu"
         activity_name = "Chess Club"
         
-        # Check initial state
-        initial_participants = len(activities[activity_name]["participants"])
+        # Check initial state via API
+        response = client.get("/activities")
+        assert response.status_code == 200
+        activities_data = response.json()
+        initial_participants = len(activities_data[activity_name]["participants"])
         
         response = client.post(f"/activities/{activity_name}/signup?email={email}")
         assert response.status_code == 200
@@ -56,9 +56,12 @@ class TestActivitiesAPI:
         assert email in data["message"]
         assert activity_name in data["message"]
         
-        # Verify participant was added
-        assert len(activities[activity_name]["participants"]) == initial_participants + 1
-        assert email in activities[activity_name]["participants"]
+        # Verify participant was added via API
+        response = client.get("/activities")
+        assert response.status_code == 200
+        activities_data = response.json()
+        assert len(activities_data[activity_name]["participants"]) == initial_participants + 1
+        assert email in activities_data[activity_name]["participants"]
 
     def test_signup_for_nonexistent_activity(self, client):
         """Test signup for non-existent activity returns 404"""
@@ -87,9 +90,12 @@ class TestActivitiesAPI:
         email = "michael@mergington.edu"  # Existing participant in Chess Club
         activity_name = "Chess Club"
         
-        # Check initial state
-        initial_participants = len(activities[activity_name]["participants"])
-        assert email in activities[activity_name]["participants"]
+        # Check initial state via API
+        response = client.get("/activities")
+        assert response.status_code == 200
+        activities_data = response.json()
+        initial_participants = len(activities_data[activity_name]["participants"])
+        assert email in activities_data[activity_name]["participants"]
         
         response = client.delete(f"/activities/{activity_name}/participants/{email}")
         assert response.status_code == 200
@@ -99,9 +105,12 @@ class TestActivitiesAPI:
         assert email in data["message"]
         assert activity_name in data["message"]
         
-        # Verify participant was removed
-        assert len(activities[activity_name]["participants"]) == initial_participants - 1
-        assert email not in activities[activity_name]["participants"]
+        # Verify participant was removed via API
+        response = client.get("/activities")
+        assert response.status_code == 200
+        activities_data = response.json()
+        assert len(activities_data[activity_name]["participants"]) == initial_participants - 1
+        assert email not in activities_data[activity_name]["participants"]
 
     def test_remove_participant_from_nonexistent_activity(self, client):
         """Test removing participant from non-existent activity returns 404"""
@@ -134,8 +143,11 @@ class TestActivitiesAPI:
         response = client.post(f"/activities/{encoded_activity}/signup?email={email}")
         assert response.status_code == 200
         
-        # Verify participant was added to the correct activity
-        assert email in activities[activity_name]["participants"]
+        # Verify participant was added to the correct activity via API
+        response = client.get("/activities")
+        assert response.status_code == 200
+        activities_data = response.json()
+        assert email in activities_data[activity_name]["participants"]
 
     def test_url_encoding_in_email_addresses(self, client):
         """Test that URL encoding works for email addresses with special characters"""
@@ -146,21 +158,32 @@ class TestActivitiesAPI:
         response = client.post(f"/activities/{activity_name}/signup?email={email}")
         assert response.status_code == 200
         
-        # Verify participant was added
-        assert email in activities[activity_name]["participants"]
+        # Verify participant was added via API
+        response = client.get("/activities")
+        assert response.status_code == 200
+        activities_data = response.json()
+        assert email in activities_data[activity_name]["participants"]
         
         # Then remove them using the same email
         response = client.delete(f"/activities/{activity_name}/participants/{email}")
         assert response.status_code == 200
         
-        # Verify participant was removed
-        assert email not in activities[activity_name]["participants"]
+        # Verify participant was removed via API
+        response = client.get("/activities")
+        assert response.status_code == 200
+        activities_data = response.json()
+        assert email not in activities_data[activity_name]["participants"]
 
     def test_activity_capacity_limits(self, client):
         """Test behavior when activities reach capacity"""
         # Find an activity and fill it to capacity
         activity_name = "Chess Club"
-        activity = activities[activity_name]
+        
+        # Get activity details via API
+        response = client.get("/activities")
+        assert response.status_code == 200
+        activities_data = response.json()
+        activity = activities_data[activity_name]
         max_participants = activity["max_participants"]
         current_participants = len(activity["participants"])
         
@@ -172,8 +195,11 @@ class TestActivitiesAPI:
             response = client.post(f"/activities/{activity_name}/signup?email={email}")
             assert response.status_code == 200
         
-        # Verify activity is at capacity
-        assert len(activities[activity_name]["participants"]) == max_participants
+        # Verify activity is at capacity via API
+        response = client.get("/activities")
+        assert response.status_code == 200
+        activities_data = response.json()
+        assert len(activities_data[activity_name]["participants"]) == max_participants
         
         # Try to add one more participant (should still work as we don't enforce capacity in backend)
         overflow_email = "overflow@mergington.edu"

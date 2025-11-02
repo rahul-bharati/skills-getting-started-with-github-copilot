@@ -1,9 +1,6 @@
 """
 Integration tests for the complete workflow
 """
-import pytest
-from fastapi.testclient import TestClient
-from src.app import app, activities
 
 
 class TestIntegration:
@@ -55,7 +52,11 @@ class TestIntegration:
             "actor3@mergington.edu"
         ]
         
-        initial_count = len(activities[activity_name]["participants"])
+        # Get initial participant count via API
+        response = client.get("/activities")
+        assert response.status_code == 200
+        activities_data = response.json()
+        initial_count = len(activities_data[activity_name]["participants"])
         
         # Multiple students sign up
         for student in students:
